@@ -49,7 +49,7 @@ async def get_current_user_id(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> str:
     """Verify Clerk JWT and return the user ID (sub claim).
-    
+
     For testing purposes, if no credentials are provided, returns a demo user ID.
     In production, this should require valid Clerk JWT.
     """
