@@ -1,0 +1,27 @@
+#!/bin/bash
+# PDF Sage — Clerk Auth Setup Helper
+# Run this after creating a Clerk application
+
+echo "=== PDF Sage — Clerk Auth Setup ==="
+echo ""
+echo "1. Go to https://dashboard.clerk.com"
+echo "2. Create a new application"
+echo "3. Copy the following values to your .env files:"
+echo ""
+echo "   Frontend (.env.local):"
+echo "   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_..."
+echo ""
+echo "   Backend (.env):"
+echo "   CLERK_SECRET_KEY=sk_test_..."
+echo "   CLERK_JWKS_URL=https://your-app.clerk.accounts.dev/.well-known/jwks.json"
+echo "   CLERK_ISSUER=https://your-app.clerk.accounts.dev"
+echo ""
+echo "4. In Clerk Dashboard → Paths, set:"
+echo "   Sign-in URL: /login"
+echo "   Sign-up URL: /signup"  
+echo "   After sign-in: /dashboard"
+echo "   After sign-up: /dashboard"
+echo ""
+echo "5. In Clerk Dashboard → JWT Templates, ensure 'exp' claim is included"
+echo ""
+echo "Done! Restart your dev servers."
