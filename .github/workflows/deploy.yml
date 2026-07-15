@@ -15,15 +15,22 @@ jobs:
   # ─────────────────────────────────────────────────────────────
   deploy-frontend:
     name: Deploy Frontend to Vercel
-    if: ${{ secrets.VERCEL_TOKEN != '' }}
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: frontend
     steps:
+      - name: Skip if no Vercel token
+        if: ${{ env.VERCEL_TOKEN == '' }}
+        run: echo "Skipping — VERCEL_TOKEN not configured"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
       - uses: actions/checkout@v4
+        if: ${{ secrets.VERCEL_TOKEN != '' }}
 
       - name: Setup Node
+        if: ${{ secrets.VERCEL_TOKEN != '' }}
         uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -31,15 +38,18 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install Vercel CLI
+        if: ${{ secrets.VERCEL_TOKEN != '' }}
         run: npm install -g vercel@latest
 
       - name: Pull Vercel environment
+        if: ${{ secrets.VERCEL_TOKEN != '' }}
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: Build project artifacts
+        if: ${{ secrets.VERCEL_TOKEN != '' }}
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -48,6 +58,7 @@ jobs:
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
 
       - name: Deploy to Vercel
+        if: ${{ secrets.VERCEL_TOKEN != '' }}
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -58,28 +69,37 @@ jobs:
   # ─────────────────────────────────────────────────────────────
   deploy-backend:
     name: Deploy Backend to Railway
-    if: ${{ secrets.RAILWAY_TOKEN != '' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Skip if no Railway token
+        if: ${{ env.RAILWAY_TOKEN == '' }}
+        run: echo "Skipping — RAILWAY_TOKEN not configured"
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
       - uses: actions/checkout@v4
+        if: ${{ secrets.RAILWAY_TOKEN != '' }}
 
       - name: Install Railway CLI
+        if: ${{ secrets.RAILWAY_TOKEN != '' }}
         run: npm install -g @railway/cli@latest
 
       - name: Deploy backend (web service)
+        if: ${{ secrets.RAILWAY_TOKEN != '' }}
         run: railway up --service web --environment production
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
 
       - name: Deploy worker
+        if: ${{ secrets.RAILWAY_TOKEN != '' }}
         run: railway up --service worker --environment production
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
 
   # ─────────────────────────────────────────────────────────────
-  # Post-deploy health check (only runs if a deploy succeeded)
+  # Post-deploy health check
   # ─────────────────────────────────────────────────────────────
   health-check:
     name: Post-Deploy Health Check
@@ -120,20 +140,25 @@ jobs:
           exit 1
 
   # ─────────────────────────────────────────────────────────────
-  # Always succeeds — keeps workflow green when secrets are absent
+  # Summary — always runs so the workflow shows as complete
   # ─────────────────────────────────────────────────────────────
-  deploy-complete:
-    name: Deploy Complete
+  deploy-summary:
+    name: Deploy Summary
     if: ${{ always() }}
+    needs: [deploy-frontend, deploy-backend, health-check]
     runs-on: ubuntu-latest
     steps:
-      - name: Summary
+      - name: Print summary
         run: |
-          echo "Deploy pipeline finished."
-          echo ""
-          if [ "${{ secrets.VERCEL_TOKEN }}" = "" ] && [ "${{ secrets.RAILWAY_TOKEN }}" = "" ]; then
-            echo "Both deploy jobs skipped — secrets not configured yet."
-            echo "See docs/DEPLOYMENT.md to set up Vercel + Railway."
-          else
-            echo "Deploy jobs executed. Check individual job logs for details."
+          echo "## Deploy Pipeline Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend deploy | ${{ needs.deploy-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend deploy | ${{ needs.deploy-backend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Health check | ${{ needs.health-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.deploy-frontend.result }}" = "skipped" ] && [ "${{ needs.deploy-backend.result }}" = "skipped" ]; then
+            echo "Both deploys skipped — **secrets not configured yet**." >> $GITHUB_STEP_SUMMARY
+            echo "See [Deployment Guide](docs/DEPLOYMENT.md) to set up Vercel + Railway." >> $GITHUB_STEP_SUMMARY
           fi
