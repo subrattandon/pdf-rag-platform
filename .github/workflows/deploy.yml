@@ -79,7 +79,7 @@ jobs:
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
 
   # ─────────────────────────────────────────────────────────────
-  # Post-deploy health check
+  # Post-deploy health check (only runs if a deploy succeeded)
   # ─────────────────────────────────────────────────────────────
   health-check:
     name: Post-Deploy Health Check
@@ -118,3 +118,24 @@ jobs:
           done
           echo "ERROR: Frontend health check failed after 30 attempts"
           exit 1
+
+  # ─────────────────────────────────────────────────────────────
+  # Always succeeds — keeps workflow green when secrets are absent
+  # ─────────────────────────────────────────────────────────────
+  deploy-complete:
+    name: Deploy Complete
+    if: ${{ always() }}
+    needs: [deploy-frontend, deploy-backend, health-check]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Summary
+        run: |
+          echo "Deploy pipeline finished."
+          echo "  deploy-frontend: ${{ needs.deploy-frontend.result }}"
+          echo "  deploy-backend:  ${{ needs.deploy-backend.result }}"
+          echo "  health-check:    ${{ needs.health-check.result }}"
+          echo ""
+          if [ "${{ needs.deploy-frontend.result }}" = "skipped" ] && [ "${{ needs.deploy-backend.result }}" = "skipped" ]; then
+            echo "Both deploy jobs skipped — secrets not configured yet."
+            echo "See docs/DEPLOYMENT.md to set up Vercel + Railway."
+          fi
