@@ -93,3 +93,8 @@ tsconfig.tsbuildinfo
 *.tgz
 *.tar.gz
 .cache/
+
+# ===========================
+# Agent / IDE tooling
+# ===========================
+.agent/

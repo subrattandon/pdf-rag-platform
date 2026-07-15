@@ -1,11 +1,25 @@
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
+from app.core.config import settings
 from app.core.database import Base
 
 config = context.config
+
+# Override alembic.ini sqlalchemy.url with the runtime DATABASE_URL_SYNC.
+# Falls back to DATABASE_URL (async) with the asyncpg driver swapped to psycopg2.
+_sync_url = settings.database_url_sync or os.getenv("DATABASE_URL_SYNC") or ""
+if not _sync_url and settings.database_url:
+    _sync_url = settings.database_url.replace(
+        "postgresql+asyncpg://", "postgresql+psycopg2://"
+    ).replace("postgresql://", "postgresql+psycopg2://")
+
+if _sync_url:
+    config.set_main_option("sqlalchemy.url", _sync_url)
+
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
