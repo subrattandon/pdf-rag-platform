@@ -125,17 +125,15 @@ jobs:
   deploy-complete:
     name: Deploy Complete
     if: ${{ always() }}
-    needs: [deploy-frontend, deploy-backend, health-check]
     runs-on: ubuntu-latest
     steps:
       - name: Summary
         run: |
           echo "Deploy pipeline finished."
-          echo "  deploy-frontend: ${{ needs.deploy-frontend.result }}"
-          echo "  deploy-backend:  ${{ needs.deploy-backend.result }}"
-          echo "  health-check:    ${{ needs.health-check.result }}"
           echo ""
-          if [ "${{ needs.deploy-frontend.result }}" = "skipped" ] && [ "${{ needs.deploy-backend.result }}" = "skipped" ]; then
+          if [ "${{ secrets.VERCEL_TOKEN }}" = "" ] && [ "${{ secrets.RAILWAY_TOKEN }}" = "" ]; then
             echo "Both deploy jobs skipped — secrets not configured yet."
             echo "See docs/DEPLOYMENT.md to set up Vercel + Railway."
+          else
+            echo "Deploy jobs executed. Check individual job logs for details."
           fi
