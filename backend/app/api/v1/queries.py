@@ -11,7 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from app.ai.orchestrator import run_pipeline
 from app.core.config import settings
-from app.core.database import async_session, get_db
+from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.models.query import Query
 from app.models.usage import Usage
@@ -105,6 +105,9 @@ async def query_documents(
         # ── Persist query + usage ──────────────────────────────
         doc_ids_for_storage = doc_ids_str or []
 
+        from app.core.database import _get_engine
+        _get_engine()
+        from app.core.database import async_session
         async with async_session() as db_session:
             try:
                 query_record = Query(

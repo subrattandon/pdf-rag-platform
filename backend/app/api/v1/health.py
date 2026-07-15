@@ -17,6 +17,8 @@ async def health_check():
 
     # Check PostgreSQL
     try:
+        from app.core.database import _get_engine
+        _get_engine()
         from app.core.database import async_session
         async with async_session() as session:
             await session.execute(text("SELECT 1"))
@@ -105,6 +107,8 @@ async def health_check():
 async def readiness_check():
     """Kubernetes-style readiness check — only checks critical services."""
     try:
+        from app.core.database import _get_engine
+        _get_engine()
         from app.core.database import async_session
         async with async_session() as session:
             await session.execute(text("SELECT 1"))
