@@ -16,5 +16,4 @@ def test_chunk_text_long():
 
 def test_chunk_text_empty():
     chunks = chunk_text("")
-    assert len(chunks) == 1
-    assert chunks[0] == ""
+    assert len(chunks) == 0
